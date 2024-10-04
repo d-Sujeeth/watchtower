@@ -1,18 +1,26 @@
 pipeline {
     agent any
+    
     stages {
-        stage('Clone Repo') {
+        stage('Checkout Code') {
             steps {
-                git 'https://github.com/d-Sujeeth/watchtower.git'
-            }
-        }
-        stage('Build Docker Image') {
-            steps {
+                // Checkout the correct branch
                 script {
-                    docker.build('sujeethcloud/watchtower:latest')
+                    // Ensure you're checking out the correct branch (main or master)
+                    git branch: 'main', url: 'https://github.com/d-Sujeeth/watchtower.git'
                 }
             }
         }
+        
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build the Docker image
+                    def app = docker.build('sujeethcloud/watchtower:latest')
+                }
+            }
+        }
+        
         stage('Push to Docker Hub') {
             steps {
                 script {
@@ -22,6 +30,15 @@ pipeline {
                     }
                 }
             }
+        }
+    }
+    
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed. Check the logs for details.'
         }
     }
 }
