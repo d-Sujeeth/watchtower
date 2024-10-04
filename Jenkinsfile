@@ -4,19 +4,14 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                // Checkout the correct branch
-                script {
-                    // Ensure you're checking out the correct branch (main or master)
-                    git branch: 'main', url: 'https://github.com/d-Sujeeth/watchtower.git'
-                }
+                git branch: 'main', url: 'https://github.com/d-Sujeeth/watchtower.git'
             }
         }
         
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build the Docker image
-                    def app = docker.build('sujeethcloud/watchtower:latest')
+                    docker.build('sujeethcloud/watchtower:latest')
                 }
             }
         }
@@ -24,10 +19,42 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 script {
-                    // Reference the Docker Hub credentials in this stage
                     docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-credentials') {
                         docker.image('sujeethcloud/watchtower:latest').push()
                     }
+                }
+            }
+        }
+
+        stage('Stop Old Watchtower Container') {
+            steps {
+                script {
+                    // Stop the existing Watchtower container
+                    sh 'docker stop watchtower || true'
+                }
+            }
+        }
+
+        stage('Remove Old Watchtower Container') {
+            steps {
+                script {
+                    // Remove the old container
+                    sh 'docker rm watchtower || true'
+                }
+            }
+        }
+
+        stage('Deploy New Watchtower Container') {
+            steps {
+                script {
+                    // Run the new Watchtower container
+                    sh '''
+                    docker run -d \
+                        --name watchtower \
+                        --restart unless-stopped \
+                        -v /var/run/docker.sock:/var/run/docker.sock \
+                        sujeethcloud/watchtower:latest
+                    '''
                 }
             }
         }
